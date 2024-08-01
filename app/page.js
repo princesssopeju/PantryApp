@@ -1,5 +1,5 @@
 "use client";
-import { Box, Stack, Typography, Button, TextField } from "@mui/material";
+import { Box, Stack, Typography, Button, TextField, Modal } from "@mui/material";
 import { firestore } from "./firebase";
 import { collection, getDocs, query, doc, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
@@ -67,6 +67,7 @@ export default function Home() {
       }
 
       updatePantry();
+      handleClose();
     } catch (error) {
       console.error("Error adding document: ", error);
     }
@@ -101,6 +102,14 @@ export default function Home() {
     } else {
       const filtered = pantry.filter(item => item.name.includes(query.toLowerCase()));
       setFilteredPantry(filtered);
+    }
+  };
+
+  const handleAddItem = (e) => {
+    e.preventDefault();
+    if (itemName.trim() !== "") {
+      addItem(itemName);
+      setItemName("");
     }
   };
 
@@ -238,6 +247,37 @@ export default function Home() {
           )}
         </Stack>
       </Box>
+
+      <Modal open={open} onClose={handleClose}>
+        <Box sx={style}>
+          <Typography variant="h6" component="h2" textAlign="center">
+            Add Item
+          </Typography>
+          <TextField
+            label="Item Name"
+            variant="outlined"
+            value={itemName}
+            onChange={(e) => setItemName(e.target.value)}
+            fullWidth
+          />
+          <Button
+            variant="contained"
+            onClick={handleAddItem}
+            sx={{
+              bgcolor: '#FF69B4',
+              '&:hover': { bgcolor: '#FF1493' },
+              color: '#fff',
+              fontWeight: 'bold',
+              borderRadius: '8px',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+              fontSize: '0.875rem',
+              padding: '8px 16px',
+            }}
+          >
+            Add
+          </Button>
+        </Box>
+      </Modal>
     </Box>
   );
 }
