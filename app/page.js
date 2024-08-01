@@ -1,95 +1,243 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import { Box, Stack, Typography, Button, TextField } from "@mui/material";
+import { firestore } from "./firebase";
+import { collection, getDocs, query, doc, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: '100%',
+  maxWidth: 400,
+  bgcolor: '#FFC0CB',
+  border: '2px solid #000',
+  boxShadow: 24,
+  p: 4,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 3,
+  borderRadius: '8px',
+};
+
+const capitalizeFirstLetter = (string) => {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+};
 
 export default function Home() {
+  const [pantry, setPantryList] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [itemName, setItemName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredPantry, setFilteredPantry] = useState([]);
+  const [isClient, setIsClient] = useState(false);
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  const updatePantry = async () => {
+    const q = query(collection(firestore, "pantry"));
+    const querySnapshot = await getDocs(q);
+    const pantryList = [];
+    querySnapshot.forEach((doc) => {
+      pantryList.push({ name: doc.id, count: doc.data().count });
+    });
+    setPantryList(pantryList);
+    setFilteredPantry(pantryList);
+  };
+
+  useEffect(() => {
+    setIsClient(true);
+    updatePantry();
+  }, []);
+
+  const addItem = async (item) => {
+    try {
+      const normalizedItem = item.toLowerCase();
+      const docRef = doc(collection(firestore, 'pantry'), normalizedItem);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        await updateDoc(docRef, {
+          count: docSnap.data().count + 1
+        });
+      } else {
+        await setDoc(docRef, { count: 1 });
+      }
+
+      updatePantry();
+    } catch (error) {
+      console.error("Error adding document: ", error);
+    }
+  };
+
+  const removeItem = async (item) => {
+    try {
+      const docRef = doc(collection(firestore, 'pantry'), item.name.toLowerCase());
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const currentCount = docSnap.data().count;
+        if (currentCount > 1) {
+          await updateDoc(docRef, {
+            count: currentCount - 1
+          });
+        } else {
+          await deleteDoc(docRef);
+        }
+      }
+
+      updatePantry();
+    } catch (error) {
+      console.error("Error removing document: ", error);
+    }
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query === "") {
+      setFilteredPantry(pantry);
+    } else {
+      const filtered = pantry.filter(item => item.name.includes(query.toLowerCase()));
+      setFilteredPantry(filtered);
+    }
+  };
+
+  if (!isClient) {
+    return null;
+  }
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+    <Box
+      width="100vw"
+      height="100vh"
+      display={'flex'}
+      justifyContent={'center'}
+      flexDirection={'column'}
+      alignItems={'center'}
+      gap={2}
+      bgcolor={'#FFEBEF'}
+      p={2}
+      pt={16}
+      pb={18}
+    >
+      <Box 
+        display="flex" 
+        flexDirection="column" 
+        alignItems="center" 
+        gap={2} 
+        width="100%" 
+        maxWidth="600px"
+        mb={2}
+      >
+        <TextField
+          id="search"
+          label="Search Pantry"
+          variant="outlined"
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+          fullWidth
+          sx={{ bgcolor: '#fff', borderRadius: '4px' }}
         />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Button 
+          variant="contained" 
+          onClick={handleOpen} 
+          sx={{ 
+            bgcolor: '#FF69B4', 
+            '&:hover': { bgcolor: '#FF1493' },
+            color: '#fff',
+            fontWeight: 'bold',
+            borderRadius: '8px',
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+            fontSize: '0.75rem',
+            padding: '4px 8px',
+            mt: 0.5
+          }}
         >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
+          Add
+        </Button>
+      </Box>
+      <Box 
+        border={'1px solid #333'} 
+        width="100%" 
+        maxWidth="500px" 
+        borderRadius={'6px'} 
+        boxShadow={'0 4px 8px rgba(0, 0, 0, 0.1)'} 
+        mt={2}
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+      >
+        <Box
+          width="100%"
+          height="60px"
+          bgcolor={'#FFB6C1'}
+          display={'flex'}
+          justifyContent={'center'}
+          alignItems={'center'}
+          borderBottom={'1px solid #333'}
+          sx={{ borderRadius: '6px 6px 0 0' }}
         >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
+          <Typography variant={'h5'} color={'#333'} textAlign={'center'} fontWeight={'bold'}>
+            Pantry Items
+          </Typography>
+        </Box>
+        <Stack
+          width="100%"
+          height="300px"
+          spacing={2}
+          overflowY={'auto'}
+          padding={2}
         >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+          {filteredPantry.length > 0 ? filteredPantry.map((item) => (
+            <Box
+              key={item.name}
+              width="100%"
+              display={'flex'}
+              justifyContent={'space-between'}
+              alignItems={'center'}
+              bgcolor={'#f8f8f8'}
+              border={'1px solid #ccc'}
+              borderRadius={4}
+              p={2}
+              boxShadow={'0 2px 4px rgba(0, 0, 0, 0.1)'}
+              maxWidth="90%"
+              mx="auto"
+            >
+              <Box display={'flex'} flexDirection={'column'} justifyContent={'center'}>
+                <Typography variant={'h6'} color={'#333'} fontWeight={'bold'}>
+                  {capitalizeFirstLetter(item.name)}
+                </Typography>
+                <Typography variant={'body2'} color={'#666'}>
+                  Quantity: {item.count}
+                </Typography>
+              </Box>
+              <Button 
+                variant="contained" 
+                color="secondary" 
+                onClick={() => removeItem(item)} 
+                sx={{
+                  bgcolor: '#FFB6C1',
+                  '&:hover': { bgcolor: '#FF69B4' },
+                  padding: '4px 8px',
+                  fontSize: '0.875rem',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                }}
+              >
+                Remove
+              </Button>
+            </Box>
+          )) : (
+            <Typography variant={'h6'} color={'#333'} textAlign={'center'} fontWeight={'bold'}>
+              No items found
+            </Typography>
+          )}
+        </Stack>
+      </Box>
+    </Box>
   );
 }
