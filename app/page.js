@@ -105,14 +105,6 @@ export default function Home() {
     }
   };
 
-  const handleAddItem = (e) => {
-    e.preventDefault();
-    if (itemName.trim() !== "") {
-      addItem(itemName);
-      setItemName("");
-    }
-  };
-
   if (!isClient) {
     return null;
   }
@@ -135,9 +127,9 @@ export default function Home() {
         display="flex" 
         flexDirection="column" 
         alignItems="center" 
-        gap={2} 
+        gap={1} 
         width="100%" 
-        maxWidth="600px"
+        maxWidth="400px"
         mb={2}
       >
         <TextField
@@ -168,15 +160,16 @@ export default function Home() {
         </Button>
       </Box>
       <Box 
-        border={'1px solid #333'} 
+        border={'1px solid #ccc'} 
         width="100%" 
-        maxWidth="500px" 
+        maxWidth="550px" // Slightly increased the width
         borderRadius={'6px'} 
         boxShadow={'0 4px 8px rgba(0, 0, 0, 0.1)'} 
-        mt={2}
+        mt={1}
         display="flex"
         flexDirection="column"
         alignItems="center"
+        overflow="hidden"
       >
         <Box
           width="100%"
@@ -185,93 +178,105 @@ export default function Home() {
           display={'flex'}
           justifyContent={'center'}
           alignItems={'center'}
-          borderBottom={'1px solid #333'}
+          borderBottom={'1px solid #ccc'}
           sx={{ borderRadius: '6px 6px 0 0' }}
         >
           <Typography variant={'h5'} color={'#333'} textAlign={'center'} fontWeight={'bold'}>
             Pantry Items
           </Typography>
         </Box>
-        <Stack
-          width="100%"
-          height="300px"
-          spacing={2}
-          overflowY={'auto'}
-          padding={2}
+        <Box
+          sx={{
+            width: "100%",
+            maxHeight: "350px", // Increased height for more visible items
+            overflowY: "auto", // Enable vertical scrolling
+            overflowX: "hidden", // Disable horizontal scrolling
+          }}
         >
-          {filteredPantry.length > 0 ? filteredPantry.map((item) => (
-            <Box
-              key={item.name}
-              width="100%"
-              display={'flex'}
-              justifyContent={'space-between'}
-              alignItems={'center'}
-              bgcolor={'#f8f8f8'}
-              border={'1px solid #ccc'}
-              borderRadius={4}
-              p={2}
-              boxShadow={'0 2px 4px rgba(0, 0, 0, 0.1)'}
-              maxWidth="90%"
-              mx="auto"
-            >
-              <Box display={'flex'} flexDirection={'column'} justifyContent={'center'}>
-                <Typography variant={'h6'} color={'#333'} fontWeight={'bold'}>
-                  {capitalizeFirstLetter(item.name)}
-                </Typography>
-                <Typography variant={'body2'} color={'#666'}>
-                  Quantity: {item.count}
-                </Typography>
-              </Box>
-              <Button 
-                variant="contained" 
-                color="secondary" 
-                onClick={() => removeItem(item)} 
-                sx={{
-                  bgcolor: '#FFB6C1',
-                  '&:hover': { bgcolor: '#FF69B4' },
-                  padding: '4px 8px',
-                  fontSize: '0.875rem',
-                  color: '#fff',
-                  fontWeight: 'bold',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                }}
+          <Stack
+            width="100%"
+            spacing={2}
+            padding={2}
+          >
+            {filteredPantry.length > 0 ? filteredPantry.map((item) => (
+              <Box
+                key={item.name}
+                width="90%"
+                display={'flex'}
+                justifyContent={'space-between'}
+                alignItems={'center'}
+                bgcolor={'#f8f8f8'}
+                border={'1px solid #eee'}
+                borderRadius={4}
+                p={1}
+                boxShadow={'0 2px 4px rgba(0, 0, 0, 0.1)'}
+                mx="auto"
               >
-                Remove
-              </Button>
-            </Box>
-          )) : (
-            <Typography variant={'h6'} color={'#333'} textAlign={'center'} fontWeight={'bold'}>
-              No items found
-            </Typography>
-          )}
-        </Stack>
+                <Box display={'flex'} flexDirection={'column'} justifyContent={'center'}>
+                  <Typography variant={'h6'} color={'#333'} fontWeight={'bold'}>
+                    {capitalizeFirstLetter(item.name)}
+                  </Typography>
+                  <Typography variant={'body2'} color={'#666'}>
+                    Quantity: {item.count}
+                  </Typography>
+                </Box>
+                <Button 
+                  variant="contained" 
+                  color="secondary" 
+                  onClick={() => removeItem(item)} 
+                  sx={{
+                    bgcolor: '#FFB6C1',
+                    '&:hover': { bgcolor: '#FF69B4' },
+                    padding: '4px 4px',
+                    fontSize: '0.775rem',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  Remove
+                </Button>
+              </Box>
+            )) : (
+              <Typography variant={'h6'} color={'#333'} textAlign={'center'} fontWeight={'bold'}>
+                No items found
+              </Typography>
+            )}
+          </Stack>
+        </Box>
       </Box>
-
-      <Modal open={open} onClose={handleClose}>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
         <Box sx={style}>
-          <Typography variant="h6" component="h2" textAlign="center">
+          <Typography id="modal-modal-title" variant="h6" component="h2">
             Add Item
           </Typography>
           <TextField
+            id="item-name"
             label="Item Name"
             variant="outlined"
             value={itemName}
             onChange={(e) => setItemName(e.target.value)}
             fullWidth
           />
-          <Button
-            variant="contained"
-            onClick={handleAddItem}
-            sx={{
-              bgcolor: '#FF69B4',
-              '&:hover': { bgcolor: '#FF1493' },
+          <Button 
+            variant="contained" 
+            onClick={() => addItem(itemName)} 
+            sx={{ 
+              bgcolor: '#FF69B4', 
+              '&:hover': { bgcolor: '#FF69B4' },
               color: '#fff',
               fontWeight: 'bold',
-              borderRadius: '8px',
+              borderRadius: '6px',
               boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-              fontSize: '0.875rem',
-              padding: '8px 16px',
+              fontSize: '0.75rem',
+              padding: '4px 4px',
+              mt: 0.5
             }}
           >
             Add
